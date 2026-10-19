@@ -29,10 +29,11 @@ replace: venv sources/build/features.fea
 	. venv/bin/activate; fonttools feaLib -o $(FINAL_FONT) -v -v sources/build/features.fea $(FINAL_FONT)
 
 release: venv $(FINAL_FONT)
-	hb-subset --unicodes='*' --name-IDs='*' $(FINAL_FONT) --layout-features="*"  -o $(FINAL_FONT)
-	. venv/bin/activate; ttfautohint $(FINAL_FONT) $(FINAL_FONT).autohint
-	. venv/bin/activate; gftools-fix-font.py --include-source-fixes -o $(FINAL_FONT) $(FINAL_FONT).autohint
+	hb-subset --unicodes='*' --name-IDs='*' $(FINAL_FONT) --layout-features="*"  -o $(FINAL_FONT).sub
+	. venv/bin/activate; ttfautohint $(FINAL_FONT).sub $(FINAL_FONT).autohint
+	. venv/bin/activate; gftools-fix-font --include-source-fixes -o $(FINAL_FONT) $(FINAL_FONT).autohint
 	. venv/bin/activate; font-v write --sha1 $(RELEASE_ARG) $(FINAL_FONT)
+	rm -f $(FINAL_FONT).sub $(FINAL_FONT).autohint
 
 sources/build/features.fea: $(FEA_FILES)
 	cat $^ > sources/build/features.fea
@@ -45,8 +46,8 @@ specimen: specimen/specimen.pdf
 $(GLYPHS_FILE): $(ORIGINAL_GLYPHS_FILE)
 	. venv/bin/activate; python3 scripts/add-utility-glyphs.py $< $@
 
-sources/build/rules.csv: $(GLYPHS_FILE)
-	python3 scripts/dump-glyphs-rules.py $(GLYPHS_FILE)
+sources/build/rules.csv: $(GLYPHS_FILE) venv
+	. venv/bin/activate; python3 scripts/dump-glyphs-rules.py $(GLYPHS_FILE)
 
 test: $(FINAL_FONT)
 	. venv/bin/activate; fontbakery check-googlefonts -l WARN --html fontbakery-report.html --ghmarkdown fontbakery-report.md $(FINAL_FONT)
